@@ -1,0 +1,139 @@
+#include <iostream>
+#include <vector> 
+ using namespace std;
+   class RationalNumber {
+private:
+    int numerator;
+    int denominator;
+public:
+    RationalNumber(int num, int denom) : numerator(num), denominator(denom) {}
+    RationalNumber() : numerator(0), denominator(1) {}
+    bool operator>(const RationalNumber& other) const {
+        return (numerator * other.denominator) > (other.numerator * denominator);
+    }
+    bool operator==(const RationalNumber& other) const {
+        return (numerator == other.numerator) && (denominator == other.denominator);
+    }
+    bool operator<(const RationalNumber& other) const {
+        return (numerator * other.denominator) < (other.numerator * denominator);
+    }
+    friend ostream& operator<<(ostream& out, const RationalNumber& num) {
+        out << num.numerator << "/" << num.denominator;
+        return out;
+    }
+};
+class BTreeNode {
+public:
+    bool leaf;
+    vector<RationalNumber> keys;
+    vector<BTreeNode*> children;
+    BTreeNode(bool isLeaf) : leaf(isLeaf) {}
+    void insertNonFull(const RationalNumber& key, int t) {
+        auto insertionPoint = upper_bound(keys.begin(), keys.end(), key);
+        int index = insertionPoint - keys.begin();
+        if (leaf) {
+            keys.insert(insertionPoint, key);
+        }
+        else {
+            if (children[index]->keys.size() == (2 * t - 1)) {
+                splitChild(index, children[index], t);
+                if (key > keys[index]) {
+                    index++;
+                }
+            }
+            children[index]->insertNonFull(key, t);
+        }
+    }
+    void splitChild(int index, BTreeNode* child, int t) {
+        BTreeNode* newNode = new BTreeNode(child->leaf);
+        keys.insert(keys.begin() + index, child->keys[t - 1]);
+        children.insert(children.begin() + index + 1, newNode);
+        for (int j = 0; j < t - 1; j++) {
+            newNode->keys.push_back(child->keys[j + t]);
+        }
+        child->keys.resize(t - 1);
+        if (!child->leaf) {
+            for (int j = 0; j < t; j++) {
+                newNode->children.push_back(child->children[j + t]);
+            }
+            child->children.resize(t);
+        }
+    }
+    void display() {
+        for (const auto& key : keys) {
+            cout << key << " ";
+        }
+        if (!leaf) {
+            for (const auto& child : children) {
+                child->display();
+            }
+        }
+    }
+    bool search(const RationalNumber& key) const {
+        int i = 0;
+        while (i < keys.size() && key > keys[i]) {
+            i++;
+        }
+        if (keys[i] == key) {
+            return true; 
+        }
+        if (leaf) {
+            return false;
+        }
+        return children[i]->search(key);
+    }
+};
+class BTree {
+private:
+    BTreeNode* root;
+    int t;
+public:
+    BTree(int minDegree) : root(nullptr), t(minDegree) {}
+    void insert(const RationalNumber& key) {
+        if (root == nullptr) {
+            root = new BTreeNode(true);
+            root->keys.push_back(key);
+        }
+        else {
+            if (root->keys.size() == (2 * t - 1)) {
+                BTreeNode* newRoot = new BTreeNode(false);
+                newRoot->children.push_back(root);
+                newRoot->splitChild(0, root, t);
+                int i = 0;
+                if (newRoot->keys[0] < key) {
+                    i++;
+                }
+                newRoot->children[i]->insertNonFull(key, t);
+                root = newRoot;
+            }
+            else {
+                root->insertNonFull(key, t);
+            }
+        }
+    }
+    void display() {
+        if (root != nullptr) {
+            root->display();
+        }
+    }
+    bool search(const RationalNumber& key) const {
+        if (root == nullptr) {
+            return false;
+        }
+        return root->search(key);
+    }
+};
+
+int main() {
+    BTree bTree(3);
+    bTree.insert(RationalNumber(1, 2));
+    bTree.insert(RationalNumber(3, 4));
+    bTree.insert(RationalNumber(1, 3));
+    bTree.insert(RationalNumber(5, 6));
+    bTree.insert(RationalNumber(2, 3));
+    bTree.insert(RationalNumber(7, 8));
+    bTree.display();
+    RationalNumber searchKey(1, 3);
+    cout << (bTree).search(searchKey);
+    return 0;
+  }
