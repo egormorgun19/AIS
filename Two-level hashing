@@ -1,0 +1,79 @@
+#include <iostream>
+#include <vector>
+#include <list>
+#include <functional>
+using namespace std;
+class TwoLevelHash {
+private:
+    vector<vector<list<string>>> hashTable;
+    int size;
+public:
+    TwoLevelHash(int tableSize) {
+        size = tableSize;
+        hashTable.resize(size);
+    }
+    void insert(const string& key) {
+        int firstLevelHash = calculateFirstLevelHash(key);
+        int secondLevelHash = calculateSecondLevelHash(key, firstLevelHash);
+        if (hashTable[firstLevelHash].size() <= secondLevelHash) {
+            hashTable[firstLevelHash].resize(secondLevelHash + 1);
+        }
+        hashTable[firstLevelHash][secondLevelHash].push_back(key);
+    }
+    bool search(const string& key) {
+        int firstLevelHash = calculateFirstLevelHash(key);
+        if (firstLevelHash >= hashTable.size()) {
+            return false;
+        }
+        if (hashTable[firstLevelHash].empty()) {
+            return false;
+        }
+        int secondLevelHash = calculateSecondLevelHash(key, firstLevelHash);
+        if (secondLevelHash >= hashTable[firstLevelHash].size()) {
+            return false;
+        }
+        for (const string& str : hashTable[firstLevelHash][secondLevelHash]) {
+            if (str == key) {
+                return true;
+            }
+        }
+        return false;
+    }
+    vector<size_t> getHashCodes() const {
+        vector<size_t> hashCodes;
+        for (const auto& subTable : hashTable) {
+            for (const auto& bucket : subTable) {
+                for (const auto& word : bucket) {
+                    hash<string> hashFunction;
+                    size_t hashCode = hashFunction(word);
+                    hashCodes.push_back(hashCode);
+                }
+            }
+        }
+        return hashCodes;
+    }
+private:
+    int calculateFirstLevelHash(const string& key) {
+        hash<string> hashFunction;
+        return hashFunction(key) % size;
+    }
+    int calculateSecondLevelHash(const string& key, int firstLevelHash) {
+        hash<string> hashFunction;
+        if (hashTable[firstLevelHash].empty()) {
+            return 0;
+        }
+        return hashFunction(key) % hashTable[firstLevelHash].size();
+    }
+};
+int main() {
+    TwoLevelHash hash(10);
+    hash.insert("Hello");
+    hash.insert("World");
+    cout << "Search 'World': " << (hash).search("World") << endl;
+    cout << "Search 'Hi': " << (hash).search("Hi") << endl;
+    vector<size_t> hashCodes = hash.getHashCodes();
+    cout << "Hash Codes:" << endl;
+    for (size_t hashCode : hashCodes) {
+        cout << hashCode << endl;
+    }
+}
