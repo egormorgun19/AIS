@@ -1,0 +1,75 @@
+#include <iostream>
+#include <vector>
+using namespace std;
+class SegmentTree {
+private:
+    vector<int> tree;
+    int n;
+    void buildTree(const vector<int>& arr, int node, int start, int end);
+    int queryRange(int node, int start, int end, int left, int right);
+    void updateValue(int node, int start, int end, int idx, int newValue);
+public:
+    SegmentTree(const vector<int>& arr);
+    int query(int left, int right);
+    void update(int idx, int newValue);
+};
+SegmentTree::SegmentTree(const vector<int>& arr) {
+    n = arr.size();
+    tree.resize(4 * n);
+    // Побудова дерева
+    buildTree(arr, 1, 0, n - 1);
+}
+void SegmentTree::buildTree(const vector<int>& arr, int node, int start, int end) {
+    if (start == end) {
+        // Листовий вузол
+        tree[node] = arr[start];
+    }
+    else {
+        int mid = (start + end) / 2;
+        buildTree(arr, 2 * node, start, mid);
+        buildTree(arr, 2 * node + 1, mid + 1, end);
+        tree[node] = tree[2 * node] + tree[2 * node + 1];
+    }
+}
+int SegmentTree::query(int left, int right) {
+    return queryRange(1, 0, n - 1, left, right);
+}
+int SegmentTree::queryRange(int node, int start, int end, int left, int right) {
+    if (left <= start && right >= end) {
+        return tree[node];
+    }
+    if (left > end || right < start) {
+        return 0;
+    }
+    int mid = (start + end) / 2;
+    int leftSum = queryRange(2 * node, start, mid, left, right);
+    int rightSum = queryRange(2 * node + 1, mid + 1, end, left, right);
+    return leftSum + rightSum;
+}
+void SegmentTree::update(int idx, int newValue) {
+    updateValue(1, 0, n - 1, idx, newValue);
+}
+void SegmentTree::updateValue(int node, int start, int end, int idx, int newValue) {
+    if (start == end) {
+        tree[node] = newValue;
+    }
+    else {
+        int mid = (start + end) / 2;
+        if (idx >= start && idx <= mid) {
+            updateValue(2 * node, start, mid, idx, newValue);
+        }
+        else {
+            updateValue(2 * node + 1, mid + 1, end, idx, newValue);
+        }
+        tree[node] = tree[2 * node] + tree[2 * node + 1];
+    }
+}
+int main() {
+    vector<int> arr = { 1, 3, 4, 8, 9, 11 };
+    SegmentTree st(arr);
+    cout << "Sum in range [1, 4]: " << st.query(1, 8) << endl;
+    cout << "Sum in range [0, 3]: " << st.query(0, 4) << endl;
+    st.update(8, 9);
+    cout << "Sum in range [1, 4] after update: " << st.query(1, 4) << endl;
+    return 0;
+}
